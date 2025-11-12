@@ -33,7 +33,7 @@ services:
         condition: service_healthy
     networks:
       - tracker-net
-      - traefik_default
+      - traefik_proxy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tracker-backend.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))"
@@ -55,7 +55,7 @@ services:
         VITE_MAP_PROVIDER: osm
         # VITE_2GIS_KEY: your_key_here
     networks:
-      - traefik_default
+      - traefik_proxy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tracker-frontend.rule=Host(`${DOMAIN}`)"
@@ -71,5 +71,5 @@ volumes:
 networks:
   tracker-net:
     driver: bridge
-  traefik_default:
+  traefik_proxy:
     external: true
