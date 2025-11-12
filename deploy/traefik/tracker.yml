@@ -1,5 +1,6 @@
 http:
   routers:
+    # HTTPS routers
     tracker-frontend:
       entryPoints:
         - websecure
@@ -15,6 +16,22 @@ http:
         certResolver: myresolver
       service: tracker-backend
 
+    # HTTP routers -> redirect to HTTPS
+    tracker-frontend-http:
+      entryPoints:
+        - web
+      rule: "Host(`gps.it-uae.com`)"
+      middlewares:
+        - redirect-to-https
+      service: tracker-frontend
+    tracker-backend-http:
+      entryPoints:
+        - web
+      rule: "Host(`gps.it-uae.com`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))"
+      middlewares:
+        - redirect-to-https
+      service: tracker-backend
+
   services:
     tracker-frontend:
       loadBalancer:
@@ -25,7 +42,8 @@ http:
         servers:
           - url: "http://tracker-backend:8001"
 
-# Optional middlewares, uncomment if needed
-#  middlewares:
-#    gzip:
-#      compress: {}
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
