@@ -1,0 +1,17 @@
+{
+  email admin@gps.it-uae.com
+}
+
+gps.it-uae.com {
+  encode zstd gzip
+
+  # Backend API and WebSocket
+  reverse_proxy /api* backend:8001
+  reverse_proxy /ws/* backend:8001 {
+    header_up Host {host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+
+  # Frontend SPA (served by the frontend container via "serve")
+  reverse_proxy frontend:3000
+}

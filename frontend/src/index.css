@@ -1,0 +1,51 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Map should fill remaining viewport minus header on larger screens, and adapt on mobile. */
+.leaflet-container {
+  height: calc(100vh - 64px);
+  z-index: 1;
+}
+
+@media (max-width: 991px) { /* AntD lg breakpoint */
+  .leaflet-container {
+    height: calc(100vh - 64px); /* stays same, but we may later adjust for mobile bars */
+  }
+}
+
+/* Responsive utilities */
+.responsive-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Make table headers slightly smaller on very narrow screens */
+@media (max-width: 575px) {
+  .ant-table { font-size: 12px; }
+  .ant-table th { white-space: nowrap; }
+}
+
+.map-popup {
+  min-width: 200px;
+}
+
+.live-indicator {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

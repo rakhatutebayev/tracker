@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tracker-db
+    environment:
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: traccar
+      POSTGRES_DB: traccar
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tracker-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traccar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tracker-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://traccar:traccar@postgres:5432/traccar
+      DATABASE_ECHO: "False"
+      DEBUG: "False"
+      HOST: 0.0.0.0
+      PORT: 8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tracker-net
+    command: >
+      sh -c "python -m app.core.database &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8001"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: http://localhost:8001/api
+        VITE_WS_BASE: ws://localhost:8001
+        VITE_MAP_PROVIDER: osm
+        # Provide your 2GIS API key to enable 2GIS tiles (set provider=2gis)
+        # VITE_2GIS_KEY: your_key_here
+    container_name: tracker-frontend
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    networks:
+      - tracker-net
+    # No runtime env needed; API base is baked into the build
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  tracker-net:
+    driver: bridge

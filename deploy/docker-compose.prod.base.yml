@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: traccar
+      POSTGRES_DB: traccar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tracker-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traccar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://traccar:traccar@postgres:5432/traccar
+      DATABASE_ECHO: "False"
+      DEBUG: "False"
+      HOST: 0.0.0.0
+      PORT: 8001
+      CORS_ORIGINS: ${ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tracker-net
+    command: >
+      sh -c "python -m app.core.database &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8001"
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: https://${DOMAIN}/api
+        VITE_WS_BASE: wss://${DOMAIN}
+        VITE_MAP_PROVIDER: osm
+        # VITE_2GIS_KEY: your_key_here
+    networks:
+      - tracker-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  tracker-net:
+    driver: bridge

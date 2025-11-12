@@ -1,0 +1,49 @@
+name: Deploy to gps.it-uae.com
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Public domain for frontend/API'
+        required: true
+        default: 'gps.it-uae.com'
+
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate deploy env
+        run: |
+          mkdir -p deploy
+          echo "DOMAIN=${{ github.event.inputs.domain || 'gps.it-uae.com' }}" > deploy/.env
+          echo "ORIGINS=https://${{ github.event.inputs.domain || 'gps.it-uae.com' }}" >> deploy/.env
+
+      - name: Rsync to server
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -az --delete
+          path: .
+          remote_path: ${{ secrets.DEPLOY_PATH || '/root/tracker' }}
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USER || 'root' }}
+          remote_key: ${{ secrets.SSH_KEY }}
+
+      - name: Compose build & up (base, no ports)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER || 'root' }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.DEPLOY_PATH || '/root/tracker' }}/deploy
+            # Load env (DOMAIN, ORIGINS)
+            if [ -f .env ]; then export $(grep -v '^#' .env | xargs); fi
+            docker compose -f docker-compose.prod.base.yml -p tracker build
+            docker compose -f docker-compose.prod.base.yml -p tracker up -d

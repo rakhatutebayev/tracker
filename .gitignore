@@ -1,0 +1,15 @@
+# Ignore nested git repo to avoid submodule warning
+traccar/
+
+# Node build artifacts
+frontend/node_modules/
+frontend/dist/
+
+# Python venvs and caches
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+
+# Editor/OS
+.DS_Store
+.vscode/

@@ -1,0 +1,78 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: traccar
+      POSTGRES_DB: traccar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tracker-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traccar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://traccar:traccar@postgres:5432/traccar
+      DATABASE_ECHO: "False"
+      DEBUG: "False"
+      HOST: 0.0.0.0
+      PORT: 8001
+      # Allow production origin for CORS, adjust to your domain(s)
+      CORS_ORIGINS: https://gps.it-uae.com
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tracker-net
+    command: >
+      sh -c "python -m app.core.database &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8001"
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: https://gps.it-uae.com/api
+        VITE_WS_BASE: wss://gps.it-uae.com
+        VITE_MAP_PROVIDER: osm
+        # VITE_2GIS_KEY: your_key_here
+    networks:
+      - tracker-net
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - tracker-net
+
+volumes:
+  postgres_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+networks:
+  tracker-net:
+    driver: bridge
