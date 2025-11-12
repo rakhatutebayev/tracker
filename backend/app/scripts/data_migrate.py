@@ -115,8 +115,15 @@ async def import_file(session, path: Path, model, pk: str = 'id'):
 async def reset_sequences(session):
     tables = ['devices', 'positions', 'trips', 'stops', 'events', 'geofences']
     for t in tables:
-        # Build dynamic SQL safely (table names can't be parameterized in PG prepared statements)
-        sql = f"SELECT setval(pg_get_serial_sequence('{t}', 'id'), COALESCE((SELECT MAX(id) FROM {t}), 0))"
+        # Ensure sequence is set to at least 1 and points to next id
+        # setval(..., value, is_called=false) sets next nextval() to 'value'
+        sql = (
+            f"SELECT setval(\n"
+            f"  pg_get_serial_sequence('{t}', 'id'),\n"
+            f"  GREATEST((SELECT COALESCE(MAX(id), 0) FROM {t}) + 1, 1),\n"
+            f"  false\n"
+            f")"
+        )
         await session.execute(text(sql))
     await session.commit()
 
