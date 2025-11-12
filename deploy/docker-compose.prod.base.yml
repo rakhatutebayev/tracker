@@ -33,6 +33,14 @@ services:
         condition: service_healthy
     networks:
       - tracker-net
+      - traefik_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tracker-backend.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))"
+      - "traefik.http.routers.tracker-backend.entrypoints=websecure"
+      - "traefik.http.routers.tracker-backend.tls=true"
+      - "traefik.http.routers.tracker-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.tracker-backend.loadbalancer.server.port=8001"
     command: >
       sh -c "python -m app.core.database &&
              uvicorn app.main:app --host 0.0.0.0 --port 8001"
@@ -47,7 +55,14 @@ services:
         VITE_MAP_PROVIDER: osm
         # VITE_2GIS_KEY: your_key_here
     networks:
-      - tracker-net
+      - traefik_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tracker-frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.tracker-frontend.entrypoints=websecure"
+      - "traefik.http.routers.tracker-frontend.tls=true"
+      - "traefik.http.routers.tracker-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.tracker-frontend.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
@@ -56,3 +71,5 @@ volumes:
 networks:
   tracker-net:
     driver: bridge
+  traefik_default:
+    external: true
