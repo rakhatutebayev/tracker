@@ -21,6 +21,7 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    container_name: tracker-backend
     environment:
       DATABASE_URL: postgresql+asyncpg://traccar:traccar@postgres:5432/traccar
       DATABASE_ECHO: "False"
@@ -55,6 +56,7 @@ services:
         VITE_WS_BASE: wss://${DOMAIN}
         VITE_MAP_PROVIDER: osm
         # VITE_2GIS_KEY: your_key_here
+    container_name: tracker-frontend
     networks:
       - traefik_proxy
     labels:

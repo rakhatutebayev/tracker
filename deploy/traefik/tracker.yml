@@ -1,0 +1,31 @@
+http:
+  routers:
+    tracker-frontend:
+      entryPoints:
+        - websecure
+      rule: "Host(`gps.it-uae.com`)"
+      tls:
+        certResolver: myresolver
+      service: tracker-frontend
+    tracker-backend:
+      entryPoints:
+        - websecure
+      rule: "Host(`gps.it-uae.com`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))"
+      tls:
+        certResolver: myresolver
+      service: tracker-backend
+
+  services:
+    tracker-frontend:
+      loadBalancer:
+        servers:
+          - url: "http://tracker-frontend:3000"
+    tracker-backend:
+      loadBalancer:
+        servers:
+          - url: "http://tracker-backend:8001"
+
+# Optional middlewares, uncomment if needed
+#  middlewares:
+#    gzip:
+#      compress: {}
