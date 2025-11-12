@@ -40,6 +40,7 @@ services:
       - "traefik.http.routers.tracker-backend.entrypoints=websecure"
       - "traefik.http.routers.tracker-backend.tls=true"
       - "traefik.http.routers.tracker-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tracker-backend.priority=100"
       - "traefik.http.services.tracker-backend.loadbalancer.server.port=8001"
     command: >
       sh -c "python -m app.core.database &&
